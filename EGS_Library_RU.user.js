@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         EGS Library RU
 // @namespace    http://tampermonkey.net/
-// @version      6.3
+// @version      6.4
 // @description  Отображение информации на карточках о владении на сайте Epic Games.
 // @author       pumPCin
 // @license      MIT
 // @match        https://store.epicgames.com/*
+// @updateURL    https://github.com/pumPCin/EGS_Library_RU/raw/refs/heads/main/EGS_Library_RU.user.js
+// @downloadURL  https://github.com/pumPCin/EGS_Library_RU/raw/refs/heads/main/EGS_Library_RU.user.js
 // @grant        GM.xmlHttpRequest
 // @grant        GM.getValue
 // @grant        GM.setValue
@@ -42,10 +44,10 @@
     logWrapper.innerHTML = `
         <div id="log-h" style="padding:5px;background:#222;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #333;user-select:none;">
             <div style="display:flex;gap:5px;">
-                <button id="btn-clear-all" title="Удалить из кеша 'ВСЁ'" style="${btnStyle}color:#f44336;">[К]</button>
-                <button id="btn-clear-owned" title="Удалить из кеша 'В БИБЛИОТЕКЕ'" style="${btnStyle}color:#0078f2;">[В]</button>
-                <button id="btn-clear-not" title="Удалить из кеша 'НЕ КУПЛЕН'" style="${btnStyle}color:#ff9800;">[Н]</button>
-                <button id="btn-clear-dupes" title="Удалить из кеша дубликаты и конфликты" style="${btnStyle}color:#0ff;">[Д]</button>
+                <button id="btn-clear-all" title="Удалить из кэша 'ВСЁ'" style="${btnStyle}color:#f44336;">[К]</button>
+                <button id="btn-clear-owned" title="Удалить из кэша 'В БИБЛИОТЕКЕ'" style="${btnStyle}color:#0078f2;">[В]</button>
+                <button id="btn-clear-not" title="Удалить из кэша 'НЕ КУПЛЕНО'" style="${btnStyle}color:#ff9800;">[Н]</button>
+                <button id="btn-clear-dupes" title="Удалить из кэша дубликаты и конфликты" style="${btnStyle}color:#0ff;">[Д]</button>
             </div>
             <div style="display:flex;gap:10px;align-items:center;">
                 <span style="color:#666;">Панель логов EGS Library RU</span>
@@ -84,7 +86,7 @@
     }
 
     async function clearDuplicates() {
-        addLog("Сканирование кеша...", "#fff");
+        addLog("Сканирование кэша…", "#fff");
         const keys = await GM.listValues();
         const seen = {};
         let count = 0;
@@ -95,7 +97,7 @@
 
             if (seen[key]) {
                 if (seen[key] !== val.status) {
-                    addLog(`Конфликт (${key}): удалено`, "#fff");
+                    addLog(`Конфликт (${key}): удален`, "#fff");
                     await GM.deleteValue(key);
                 } else {
                     addLog(`Дубликат (${key}): удален`, "#fff");
@@ -103,7 +105,7 @@
                 }
             } else { seen[key] = val.status; }
         }
-        addLog(`Очистка кеша завершена. Удалено: ${count}`, "#0f0");
+        addLog(`Очистка кэша завершена. Удалено: ${count}`, "#0f0");
     }
 
     document.getElementById('btn-clear-all').onclick = () => clearCache('ALL');
@@ -112,7 +114,7 @@
     document.getElementById('btn-clear-dupes').onclick = clearDuplicates;
 
     async function checkCurrentPage() {
-        if (!window.location.pathname.includes('/p/')) return;
+        if (!window.location.pathname.includes('/p/') && !window.location.pathname.includes('/bundles/')) return;
 
         const gameKey = normalizeUrl(window.location.href);
         const buyButton = document.querySelector('aside') || document.querySelector('[data-testid="purchase-cta-button"]');
@@ -124,7 +126,7 @@
 
             if (!oldData || oldData.status !== status) {
                 await GM.setValue(gameKey, { status, time: Date.now() });
-                addLog(`[СТРАНИЦА ИГРЫ] Кеш обновлен: ${gameKey} -> ${status}`, "#0ff");
+                addLog(`[СТРАНИЦА ТОВАРА] Кеш обновлен: ${gameKey} -> ${status}`, "#0ff");
             }
         }
     }
@@ -145,7 +147,7 @@
                     method: "GET", url: item.url,
                     onload: async (res) => {
                         if (res.status > 200) {
-                            addLog(`Ошибка ${res.status}: пауза 60 сек...`, '#fff');;
+                            addLog(`Ошибка ${res.status}: пауза 60 сек…`, '#fff');;
                             isPaused = true;
                             setTimeout(() => { isPaused = false; addLog('Пауза снята', '#fff'); }, 60000);
                             resolve(); return;
@@ -190,7 +192,7 @@
             pointer-events:none;
             box-shadow:0 2px 4px rgba(0,0,0,0.5);
         `;
-        badge.innerText = isOwned ? "В БИБЛИОТЕКЕ" : "НЕ КУПЛЕН";
+        badge.innerText = isOwned ? "В БИБЛИОТЕКЕ" : "НЕ КУПЛЕНО";
 
         card.style.position = "relative";
         card.appendChild(badge);
@@ -203,7 +205,7 @@
             queue = [];
             addLog('Смена URL: очистка', '#0ff');
             document.querySelectorAll('.egs-badge').forEach(b => b.remove());
-            document.querySelectorAll('a[href*="/p/"]').forEach(l => { 
+            document.querySelectorAll('a[href*="/p/"], a[href*="/bundles/"]').forEach(l => { 
                 delete l.dataset.marked; 
                 delete l.dataset.enqueued; 
             });
@@ -211,7 +213,7 @@
 
         checkCurrentPage();
 
-        const links = document.querySelectorAll('a[href*="/p/"]');
+        const links = document.querySelectorAll('a[href*="/p/"], a[href*="/bundles/"]');
         links.forEach(async (link) => {
             const hasImage = link.querySelector('img') || link.querySelector('picture') || link.innerHTML.includes('srcset');
             if (!hasImage) return;
@@ -222,7 +224,7 @@
             if (cached) {
                 if (link.dataset.marked !== cached.status) {
                     applyBadge(link, cached.status, true, gameKey);
-                    addLog(`КЕШ [${cached.status}]: ${gameKey}`, cached.status === 'OWNED' ? '#0078f2' : '#ff9800');
+                    addLog(`КЭШ [${cached.status}]: ${gameKey}`, cached.status === 'OWNED' ? '#0078f2' : '#ff9800');
                 }
             } else if (!link.dataset.enqueued && !link.dataset.marked) {
                 link.dataset.enqueued = "true";
@@ -233,5 +235,5 @@
     }
 
     setInterval(scan, 2500);
-    addLog('Скрипт запущен', '#0078f2');
+    addLog('Скрипт работает', '#0078f2');
 })();
