@@ -105,7 +105,7 @@
                 }
             } else { seen[key] = val.status; }
         }
-        addLog(`Очистка кэша завершена. Удалено: ${count}`, "#0f0");
+        addLog(`Правка кэша завершена. Удалено записей: ${count}`, "#fff");
     }
 
     document.getElementById('btn-clear-all').onclick = () => clearCache('ALL');
@@ -126,7 +126,7 @@
 
             if (!oldData || oldData.status !== status) {
                 await GM.setValue(gameKey, { status, time: Date.now() });
-                addLog(`[СТРАНИЦА ТОВАРА] Кеш обновлен: ${gameKey} -> ${status}`, "#0ff");
+                addLog(`[СТРАНИЦА ТОВАРА] КЭШ обновлен: ${gameKey} -> ${status}`, "#0ff");
             }
         }
     }
