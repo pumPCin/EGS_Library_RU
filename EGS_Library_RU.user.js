@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EGS Library RU
 // @namespace    http://tampermonkey.net/
-// @version      6.4
+// @version      6.5
 // @description  Отображение информации на карточках о владении на сайте Epic Games.
 // @author       pumPCin
 // @license      MIT
@@ -26,13 +26,22 @@
     let isPaused = false;
 
     const DELAY_LIVE = 3000;
-    const OWNED_REGEX = /(?:В библиотеке)/i;
+    const REGEX_OWNED = /(?:В библиотеке)/i;
+    const REGEX_UNAVAILABLE = /(?:Недоступно)/i;
+    const REGEX_MISSING_BASE = /(?:Необходима базовая версия)/i;
 
     function normalizeUrl(url) {
         try {
             let u = new URL(url);
             return u.pathname.toLowerCase().replace(/\/+$/, '').split('/').pop() || url;
         } catch (e) { return url; }
+    }
+
+    function determineStatus(text) {
+        if (REGEX_OWNED.test(text)) return 'OWNED';
+        if (REGEX_UNAVAILABLE.test(text)) return 'UNAVAILABLE';
+        if (REGEX_MISSING_BASE.test(text)) return 'DLC_MISSING_BASE';
+        return 'NOT_OWNED';
     }
 
     const logWrapper = document.createElement('div');
@@ -120,8 +129,7 @@
         const buyButton = document.querySelector('aside') || document.querySelector('[data-testid="purchase-cta-button"]');
 
         if (buyButton) {
-            const isOwned = OWNED_REGEX.test(buyButton.innerText);
-            const status = isOwned ? 'OWNED' : 'NOT_OWNED';
+            const status = determineStatus(buyButton.innerText);
             const oldData = await GM.getValue(gameKey);
 
             if (!oldData || oldData.status !== status) {
@@ -155,12 +163,16 @@
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(res.responseText, 'text/html');
                         const buyButton = doc.querySelector('aside') || doc.querySelector('[data-testid="purchase-cta-button"]') || doc.body;
-                        const isOwned = OWNED_REGEX.test(buyButton.innerText);
+                        const status = determineStatus(buyButton.innerText);
 
-                        const status = isOwned ? 'OWNED' : 'NOT_OWNED';
                         await GM.setValue(gameKey, { status, time: Date.now() });
                         applyBadge(item.card, status, false, gameKey);
-                        addLog(`LIVE [${status}]: ${gameKey}`, isOwned ? '#4caf50' : '#f44336');
+                        let logColor = '#fff';
+                        if (status === 'OWNED') logColor = '#4caf50';
+                        else if (status === 'NOT_OWNED') logColor = '#f44336';
+                        else if (status === 'UNAVAILABLE') logColor = '#202020';
+                        else if (status === 'DLC_MISSING_BASE') logColor = '#303030';
+                        addLog(`LIVE [${status}]: ${gameKey}`, logColor);
                         resolve();
                     },
                     onerror: () => resolve()
@@ -175,8 +187,24 @@
         const old = card.querySelector('.egs-badge'); if (old) old.remove();
         const badge = document.createElement('div');
         badge.className = 'egs-badge';
-        const isOwned = status === 'OWNED';
-        const bg = isOwned ? (isCache ? '#0078f2' : '#4caf50') : (isCache ? '#ff9800' : '#f44336');
+        let bg, text;
+        switch (status) {
+            case 'OWNED':
+                bg = isCache ? '#0078f2' : '#4caf50';
+                text = "В БИБЛИОТЕКЕ";
+                break;
+            case 'UNAVAILABLE':
+                bg = isCache ? '#030303' : '#222222';
+                text = "НЕДОСТУПНО";
+                break;
+            case 'DLC_MISSING_BASE':
+                bg = isCache ? '#060606' : '#252525';
+                text = "НЕТ ИГРЫ";
+                break;
+            default:
+                bg = isCache ? '#ff9800' : '#f44336';
+                text = "НЕ КУПЛЕНО";
+        }
 
         badge.style.cssText = `
             position:absolute;
@@ -192,7 +220,7 @@
             pointer-events:none;
             box-shadow:0 2px 4px rgba(0,0,0,0.5);
         `;
-        badge.innerText = isOwned ? "В БИБЛИОТЕКЕ" : "НЕ КУПЛЕНО";
+        badge.innerText = text;
 
         card.style.position = "relative";
         card.appendChild(badge);
@@ -224,7 +252,12 @@
             if (cached) {
                 if (link.dataset.marked !== cached.status) {
                     applyBadge(link, cached.status, true, gameKey);
-                    addLog(`КЭШ [${cached.status}]: ${gameKey}`, cached.status === 'OWNED' ? '#0078f2' : '#ff9800');
+                    let logColor = '#fff';
+                    if (cached.status === 'OWNED') logColor = '#0078f2';
+                    else if (cached.status === 'NOT_OWNED') logColor = '#ff9800';
+                    else if (cached.status === 'UNAVAILABLE') logColor = '#151515';
+                    else if (cached.status === 'DLC_MISSING_BASE') logColor = '#181818';
+                    addLog(`КЭШ [${cached.status}]: ${gameKey}`, logColor);
                 }
             } else if (!link.dataset.enqueued && !link.dataset.marked) {
                 link.dataset.enqueued = "true";
