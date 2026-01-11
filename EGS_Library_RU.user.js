@@ -168,10 +168,12 @@
                         await GM.setValue(gameKey, { status, time: Date.now() });
                         applyBadge(item.card, status, false, gameKey);
                         let logColor = '#fff';
-                        if (status === 'OWNED') logColor = '#4caf50';
-                        else if (status === 'NOT_OWNED') logColor = '#f44336';
-                        else if (status === 'UNAVAILABLE') logColor = '#202020';
-                        else if (status === 'DLC_MISSING_BASE') logColor = '#303030';
+                        switch (status) {
+                            case 'OWNED': logColor = '#4caf50'; break;
+                            case 'NOT_OWNED': logColor = '#f44336'; break;
+                            case 'UNAVAILABLE': logColor = '#9e9e9e'; break;
+                            case 'DLC_MISSING_BASE': logColor = '#616161'; break;
+                        }
                         addLog(`LIVE [${status}]: ${gameKey}`, logColor);
                         resolve();
                     },
@@ -253,10 +255,12 @@
                 if (link.dataset.marked !== cached.status) {
                     applyBadge(link, cached.status, true, gameKey);
                     let logColor = '#fff';
-                    if (cached.status === 'OWNED') logColor = '#0078f2';
-                    else if (cached.status === 'NOT_OWNED') logColor = '#ff9800';
-                    else if (cached.status === 'UNAVAILABLE') logColor = '#151515';
-                    else if (cached.status === 'DLC_MISSING_BASE') logColor = '#181818';
+                    switch (cached.status) {
+                        case 'OWNED': logColor = '#0078f2'; break;
+                        case 'NOT_OWNED': logColor = '#ff9800'; break;
+                        case 'UNAVAILABLE': logColor = '#aaaaaa'; break;
+                        case 'DLC_MISSING_BASE': logColor = '#666666'; break;
+                    }
                     addLog(`КЭШ [${cached.status}]: ${gameKey}`, logColor);
                 }
             } else if (!link.dataset.enqueued && !link.dataset.marked) {
