@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EGS Library RU
 // @namespace    http://tampermonkey.net/
-// @version      6.5
+// @version      6.6
 // @description  Отображение информации на карточках о владении на сайте Epic Games.
 // @author       pumPCin
 // @license      MIT
@@ -70,10 +70,28 @@
     const logBody = document.getElementById('log-b');
     const toggleBtn = document.getElementById('log-t');
 
+    const savedState = localStorage.getItem('egs_log_collapsed');
+    let isCollapsed = savedState === null ? true : (savedState === 'true');
+
+    if (isCollapsed) {
+        logBody.style.display = 'none';
+        toggleBtn.innerText = '[+]';
+    } else {
+        logBody.style.display = 'flex';
+        toggleBtn.innerText = '[—]';
+    }
+
     toggleBtn.onclick = () => {
-        const isH = logBody.style.display === 'none';
-        logBody.style.display = isH ? 'flex' : 'none';
-        toggleBtn.innerText = isH ? '[—]' : '[+]';
+        const isHidden = logBody.style.display === 'none';
+        if (isHidden) {
+            logBody.style.display = 'flex';
+            toggleBtn.innerText = '[—]';
+            localStorage.setItem('egs_log_collapsed', 'false');
+        } else {
+            logBody.style.display = 'none';
+            toggleBtn.innerText = '[+]';
+            localStorage.setItem('egs_log_collapsed', 'true');
+        }
     };
 
     function addLog(msg, color = '#aaa') {
