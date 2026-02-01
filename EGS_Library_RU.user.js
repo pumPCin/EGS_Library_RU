@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EGS Library RU
 // @namespace    http://tampermonkey.net/
-// @version      6.6
+// @version      6.7
 // @description  Отображение информации на карточках о владении на сайте Epic Games.
 // @author       pumPCin
 // @license      MIT
@@ -190,7 +190,7 @@
                             case 'OWNED': logColor = '#4caf50'; break;
                             case 'NOT_OWNED': logColor = '#f44336'; break;
                             case 'UNAVAILABLE': logColor = '#9e9e9e'; break;
-                            case 'DLC_MISSING_BASE': logColor = '#616161'; break;
+                            case 'DLC_MISSING_BASE': logColor = '#9b59b6'; break;
                         }
                         addLog(`LIVE [${status}]: ${gameKey}`, logColor);
                         resolve();
@@ -218,7 +218,7 @@
                 text = "НЕДОСТУПНО";
                 break;
             case 'DLC_MISSING_BASE':
-                bg = isCache ? '#060606' : '#252525';
+                bg = isCache ? '#8e44ad' : '#9b59b6';
                 text = "НЕТ ИГРЫ";
                 break;
             default:
@@ -277,7 +277,7 @@
                         case 'OWNED': logColor = '#0078f2'; break;
                         case 'NOT_OWNED': logColor = '#ff9800'; break;
                         case 'UNAVAILABLE': logColor = '#aaaaaa'; break;
-                        case 'DLC_MISSING_BASE': logColor = '#666666'; break;
+                        case 'DLC_MISSING_BASE': logColor = '#8e44ad'; break;
                     }
                     addLog(`КЭШ [${cached.status}]: ${gameKey}`, logColor);
                 }
