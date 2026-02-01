@@ -254,8 +254,8 @@
             addLog('Смена URL: очистка', '#0ff');
             document.querySelectorAll('.egs-badge').forEach(b => b.remove());
             document.querySelectorAll('a[href*="/p/"], a[href*="/bundles/"]').forEach(l => { 
-                delete l.dataset.marked; 
-                delete l.dataset.enqueued; 
+                delete l.dataset.marked;
+                delete l.dataset.enqueued;
             });
         }
 
